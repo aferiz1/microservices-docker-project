@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: "postgres:${POSTGRES_VERSION:-10}"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-demouser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-DemoPa$$}
+      POSTGRES_DB: ${POSTGRES_DB:-demodb}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - app-network
+
+  spring-boot-app:
+    build:
+      context: ./spring-boot-docker
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-demodb}"
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-demouser}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-DemoPa$$}
+      app.node.url: "http://node-app:${NODE_APP_PORT:-8081}/"
+    depends_on:
+      - postgres
+      - node-app
+    ports:
+      - "${SPRING_BOOT_PORT:-8080}:8080"
+    networks:
+      - app-network
+
+  node-app:
+    build:
+      context: ./node-app-docker
+      dockerfile: Dockerfile
+    ports:
+      - "${NODE_APP_PORT:-8081}:8081"
+    networks:
+      - app-network
+
+volumes:
+  postgres-data:
+
+networks:
+  app-network:
+    driver: bridge
